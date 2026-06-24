@@ -1,0 +1,854 @@
+/* =========================================================================
+   macOS-inspired light theme.
+
+   The goal: a dashboard that reads as a native macOS Sonoma app, not a
+   "themed web page." Apple system fonts (-apple-system, SF Pro), Apple's
+   blue accent (#007aff), translucent sidebar chrome, hairline 1px borders,
+   and 6-10px corner radii. No serif, no warm clay, no editorial weight.
+   ========================================================================= */
+
+/* ---- Reset & root scaffolding ------------------------------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: var(--surface-ground);
+    color: var(--text-color);
+    font-family: var(--font-system);
+    font-size: 13px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.005em;
+}
+
+#app {
+    height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.page-title,
+.sidebar .brand {
+    font-family: var(--font-system);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--text-color);
+}
+
+/* ---- Typography ---------------------------------------------------------- */
+:root {
+    /* Apple system font stack — covers SF Pro on macOS/iOS, Segoe UI Variable
+       on Windows 11, Roboto Flex on modern Android. */
+    --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "SF Pro Display", "Helvetica Neue", "Segoe UI Variable",
+        "Segoe UI", "Helvetica", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Menlo", "JetBrains Mono",
+        "Roboto Mono", Consolas, monospace;
+
+    /* Layout */
+    --sidebar-w: 220px;
+    --sidebar-w-collapsed: 52px;
+    --topbar-h: 44px;
+
+    /* Geometry — Mac-style: tight, soft, 6-10px radii. */
+    --radius-card: 10px;
+    --radius-control: 6px;
+    --radius-sm: 5px;
+    --radius-xs: 4px;
+
+    /* Motion — Mac's spring-y feel, very fast. */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --duration-fast: 120ms;
+    --duration-normal: 200ms;
+}
+
+/* ---- Palette (light only) ----------------------------------------------- */
+:root,
+:root.app-light {
+    /* Apple system blue. */
+    --accent: #007aff;
+    --accent-hover: #0a84ff;
+    --accent-active: #0064d2;
+    --accent-tint: rgba(0, 122, 255, 0.12);
+    --accent-text: #ffffff;
+
+    /* macOS semantic reds/oranges/greens (used by PrimeVue severities). */
+    --success: #34c759;
+    --warning: #ff9500;
+    --danger: #ff3b30;
+    --info: #5ac8fa;
+
+    /* Surfaces — true Mac chrome. Sidebar is translucent; cards are pure white;
+       ground is a barely-warmer white. */
+    --surface-ground: #f5f5f7;
+    --surface-section: #f5f5f7;
+    --surface-card: #ffffff;
+    --surface-overlay: #ffffff;
+    --surface-muted: #f5f5f7;
+    --surface-sidebar: rgba(245, 245, 247, 0.78);
+    --surface-topbar: rgba(255, 255, 255, 0.72);
+    --surface-border: rgba(0, 0, 0, 0.10);
+    --surface-border-strong: rgba(0, 0, 0, 0.18);
+    --surface-divider: rgba(0, 0, 0, 0.08);
+    --surface-hover: rgba(0, 0, 0, 0.04);
+    --surface-active: rgba(0, 0, 0, 0.08);
+    --surface-200: rgba(0, 0, 0, 0.10);
+    --surface-300: rgba(0, 0, 0, 0.18);
+
+    /* Text — Mac's label hierarchy. */
+    --text-color: #1d1d1f;
+    --text-color-secondary: #6e6e73;
+    --text-color-tertiary: #86868b;
+    --text-color-quaternary: #aeaeb2;
+
+    /* PrimeVue primary ramp — Apple blue scale. */
+    --primary-color: #007aff;
+    --primary-color-text: #ffffff;
+    --primary-50: #e5f2ff;
+    --primary-100: #cce5ff;
+    --primary-200: #99cbff;
+    --primary-300: #66b1ff;
+    --primary-400: #3398ff;
+    --primary-500: #007aff;
+    --primary-600: #0064d2;
+    --primary-700: #004d9e;
+    --primary-800: #003669;
+    --primary-900: #001f35;
+
+    /* Semantic */
+    --highlight-bg: rgba(0, 122, 255, 0.10);
+    --highlight-text-color: #0040a0;
+    --focus-ring: 0 0 0 4px rgba(0, 122, 255, 0.30);
+
+    /* PrimeVue surface tokens. */
+    --content-border-radius: var(--radius-card);
+
+    /* Shadows — Mac's restrained, blue-tinted elevation. */
+    --shadow-card: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-pop: 0 0 0 0.5px rgba(0, 0, 0, 0.08),
+        0 8px 24px rgba(0, 0, 0, 0.10),
+        0 2px 6px rgba(0, 0, 0, 0.04);
+    --shadow-toolbar: 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+}
+
+/* ---- Layout -------------------------------------------------------------- */
+.layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--surface-ground);
+}
+
+/* ---- Sidebar ------------------------------------------------------------- */
+.sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--surface-sidebar);
+    backdrop-filter: saturate(1.6) blur(20px);
+    -webkit-backdrop-filter: saturate(1.6) blur(20px);
+    border-right: 1px solid var(--surface-divider);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0.5rem 0.5rem 0.75rem;
+    transition: width var(--duration-normal) var(--ease-out);
+    -webkit-app-region: drag;
+}
+
+.layout:not(.sidebar-collapsed) .sidebar {
+    -webkit-app-region: no-drag;
+}
+
+.sidebar .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.75rem 0.65rem;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar .brand .brand-mark {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #4f9cf9 0%, #007aff 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2),
+        0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.sidebar .brand .brand-mark i {
+    color: white;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.sidebar .brand-text {
+    opacity: 1;
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.65rem;
+    margin: 0.04rem 0;
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: var(--radius-control);
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+    transition: background var(--duration-fast) var(--ease-out),
+        color var(--duration-fast) var(--ease-out);
+}
+
+.sidebar a .nav-label {
+    opacity: 1;
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.sidebar a i {
+    font-size: 0.95rem;
+    width: 1.15rem;
+    text-align: center;
+    flex-shrink: 0;
+    color: var(--text-color-secondary);
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+.sidebar a:hover {
+    background: var(--surface-hover);
+}
+
+.sidebar a:hover i {
+    color: var(--text-color);
+}
+
+.sidebar a.router-link-active {
+    background: var(--accent);
+    color: var(--accent-text);
+}
+
+.sidebar a.router-link-active i {
+    color: var(--accent-text);
+}
+
+/* Sidebar collapse --------------------------------------------------- */
+.layout.sidebar-collapsed .sidebar {
+    width: var(--sidebar-w-collapsed);
+    padding: 0.5rem 0.35rem 0.75rem;
+    align-items: center;
+}
+
+.layout.sidebar-collapsed .sidebar .brand {
+    padding: 0.5rem 0 0.75rem;
+    justify-content: center;
+}
+
+.layout.sidebar-collapsed .sidebar .brand-text,
+.layout.sidebar-collapsed .sidebar a .nav-label {
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+}
+
+.layout.sidebar-collapsed .sidebar a {
+    justify-content: center;
+    padding: 0.45rem 0;
+    width: 36px;
+    height: 36px;
+    margin: 0.08rem 0;
+    align-self: center;
+}
+
+.layout.sidebar-collapsed .sidebar a i {
+    margin: 0;
+}
+
+/* Tooltip on hover in collapsed mode */
+.layout.sidebar-collapsed .sidebar a:hover::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 0.6rem);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--text-color);
+    color: var(--surface-card);
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.3rem 0.55rem;
+    border-radius: 5px;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: var(--shadow-pop);
+    pointer-events: none;
+    letter-spacing: -0.005em;
+}
+
+.layout.sidebar-collapsed .sidebar a:hover::before {
+    content: "";
+    position: absolute;
+    left: calc(100% + 0.35rem);
+    top: 50%;
+    transform: translateY(-50%);
+    border: 4px solid transparent;
+    border-right-color: var(--text-color);
+    z-index: 101;
+    pointer-events: none;
+}
+
+/* Sidebar footer — collapse toggle */
+.sidebar-footer {
+    margin-top: auto;
+    padding: 0.5rem 0.25rem 0;
+    border-top: 1px solid var(--surface-divider);
+}
+
+.sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 30px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-control);
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+        color var(--duration-fast) var(--ease-out);
+    font-size: 0.85rem;
+}
+
+.sidebar-toggle:hover {
+    background: var(--surface-hover);
+    color: var(--text-color);
+}
+
+.sidebar-toggle i {
+    font-size: 0.95rem;
+}
+
+/* ---- Main + Topbar ------------------------------------------------------- */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.topbar {
+    height: var(--topbar-h);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.85rem 0 0.85rem;
+    border-bottom: 1px solid var(--surface-divider);
+    background: var(--surface-topbar);
+    backdrop-filter: saturate(1.6) blur(20px);
+    -webkit-backdrop-filter: saturate(1.6) blur(20px);
+}
+
+.topbar strong {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: 0.85rem;
+    color: var(--text-color);
+}
+
+.topbar .spacer {
+    flex: 1;
+}
+
+.topbar .p-button {
+    height: 28px;
+    width: 28px;
+    border-radius: 5px;
+    color: var(--text-color-secondary);
+}
+
+.topbar .p-button:hover {
+    background: var(--surface-hover);
+    color: var(--text-color);
+}
+
+.topbar .p-button:focus-visible {
+    box-shadow: var(--focus-ring);
+}
+
+/* Mac-style window controls (visual only) */
+.window-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-right: 0.6rem;
+    padding-right: 0.6rem;
+    border-right: 1px solid var(--surface-divider);
+    height: 100%;
+}
+
+.window-controls .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    transition: filter var(--duration-fast) var(--ease-out);
+}
+
+.window-controls .dot.close {
+    background: #ff5f57;
+}
+
+.window-controls .dot.minimize {
+    background: #febc2e;
+}
+
+.window-controls .dot.zoom {
+    background: #28c840;
+}
+
+.window-controls:hover .dot {
+    filter: saturate(1.1);
+}
+
+/* Bell icon area */
+.bell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    width: 28px;
+    border-radius: 5px;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+        color var(--duration-fast) var(--ease-out);
+}
+
+.bell:hover {
+    background: var(--surface-hover);
+    color: var(--text-color);
+}
+
+.bell i {
+    font-size: 0.95rem;
+}
+
+.bell .p-badge {
+    position: absolute;
+    top: 1px;
+    right: 0;
+    background: var(--danger);
+    color: white;
+}
+
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem 2rem;
+    background: var(--surface-ground);
+}
+
+.page-title {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    color: var(--text-color);
+    letter-spacing: -0.02em;
+}
+
+/* ---- Cards & grids ------------------------------------------------------- */
+.grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.85rem;
+}
+
+.p-card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow var(--duration-normal) var(--ease-out),
+        transform var(--duration-normal) var(--ease-out);
+}
+
+.p-card:hover {
+    box-shadow: var(--shadow-pop);
+}
+
+.p-card .p-card-title {
+    font-family: var(--font-system);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-color);
+    text-transform: none;
+}
+
+.p-card .p-card-title i {
+    color: var(--accent);
+    font-size: 0.9rem;
+}
+
+.p-card .p-card-body {
+    padding: 0.75rem 0.95rem 0.95rem;
+}
+
+.p-card .p-card-content {
+    padding-top: 0.15rem;
+    padding-bottom: 0;
+}
+
+/* Key/value rows */
+.kv {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.85rem;
+    padding: 0.32rem 0;
+    border-bottom: 1px solid var(--surface-divider);
+    font-size: 0.82rem;
+}
+
+.kv:last-child {
+    border-bottom: none;
+}
+
+.kv .k {
+    color: var(--text-color-secondary);
+}
+
+.kv .v {
+    font-weight: 500;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-color);
+    letter-spacing: -0.005em;
+}
+
+/* ---- Buttons ------------------------------------------------------------- */
+.p-button {
+    border-radius: var(--radius-control);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    font-size: 0.82rem;
+    padding: 0.4rem 0.75rem;
+    transition: background var(--duration-fast) var(--ease-out),
+        border-color var(--duration-fast) var(--ease-out),
+        color var(--duration-fast) var(--ease-out),
+        box-shadow var(--duration-fast) var(--ease-out),
+        transform var(--duration-fast) var(--ease-out);
+    box-shadow: none;
+}
+
+.p-button:active {
+    transform: scale(0.97);
+}
+
+.p-button:focus-visible {
+    box-shadow: var(--focus-ring);
+}
+
+.p-button.p-button-text {
+    color: var(--text-color-secondary);
+}
+
+.p-button.p-button-text:hover {
+    color: var(--text-color);
+    background: var(--surface-hover);
+}
+
+.p-button.p-button-outlined {
+    border-color: var(--surface-border);
+    color: var(--text-color);
+    background: var(--surface-card);
+}
+
+.p-button.p-button-outlined:hover {
+    background: var(--surface-hover);
+    border-color: var(--surface-border-strong);
+}
+
+.p-button.p-button-danger,
+.p-button.p-button-danger.p-button-outlined {
+    color: var(--danger);
+}
+
+.p-button.p-button-danger.p-button-outlined {
+    border-color: var(--danger);
+    background: transparent;
+}
+
+.p-button.p-button-danger.p-button-outlined:hover {
+    background: rgba(255, 59, 48, 0.08);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+/* ---- Inputs -------------------------------------------------------------- */
+.p-inputtext,
+.p-dropdown,
+.p-multiselect,
+.p-password-input,
+.p-inputnumber-input,
+.p-textarea {
+    border-radius: var(--radius-control);
+    background: var(--surface-card);
+    border-color: var(--surface-border);
+    color: var(--text-color);
+    font-size: 0.82rem;
+    padding: 0.4rem 0.55rem;
+    transition: border-color var(--duration-fast) var(--ease-out),
+        box-shadow var(--duration-fast) var(--ease-out);
+    box-shadow: none;
+}
+
+.p-inputtext:enabled:focus,
+.p-dropdown:not(.p-disabled).p-focus,
+.p-multiselect:not(.p-disabled).p-focus,
+.p-inputnumber-input:focus {
+    box-shadow: var(--focus-ring);
+    border-color: var(--accent);
+}
+
+.p-float-label label {
+    color: var(--text-color-secondary);
+    font-size: 0.82rem;
+}
+
+/* ---- Tags / badges ------------------------------------------------------- */
+.p-tag {
+    border-radius: 4px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    padding: 0.12rem 0.45rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
+}
+
+.p-badge {
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.62rem;
+    min-width: 1rem;
+    height: 1rem;
+    line-height: 1rem;
+    padding: 0 0.3rem;
+}
+
+/* ---- Tables -------------------------------------------------------------- */
+.p-datatable {
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-card);
+}
+
+.p-datatable .p-datatable-thead>tr>th {
+    background: var(--surface-muted);
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-color: var(--surface-border);
+    padding: 0.45rem 0.7rem;
+}
+
+.p-datatable .p-datatable-tbody>tr {
+    background: var(--surface-card);
+    transition: background var(--duration-fast) var(--ease-out);
+}
+
+.p-datatable .p-datatable-tbody>tr:hover {
+    background: var(--surface-hover);
+}
+
+.p-datatable .p-datatable-tbody>tr>td {
+    border-color: var(--surface-divider);
+    padding: 0.5rem 0.7rem;
+    font-size: 0.82rem;
+}
+
+/* ---- Tabs ---------------------------------------------------------------- */
+.p-tabview .p-tabview-nav {
+    border-color: var(--surface-divider);
+    gap: 0.15rem;
+}
+
+.p-tabview .p-tabview-nav li .p-tabview-nav-link {
+    font-weight: 500;
+    font-size: 0.82rem;
+    border-radius: var(--radius-control);
+    color: var(--text-color-secondary);
+    margin: 0 0.1rem;
+    border-color: transparent;
+    background: transparent;
+    padding: 0.45rem 0.7rem;
+    transition: background var(--duration-fast) var(--ease-out),
+        color var(--duration-fast) var(--ease-out);
+}
+
+.p-tabview .p-tabview-nav li:not(.p-highlight) .p-tabview-nav-link:hover {
+    background: var(--surface-hover);
+    color: var(--text-color);
+}
+
+.p-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ---- Reconnect banner ---------------------------------------------------- */
+.reconnect-banner {
+    background: rgba(255, 149, 0, 0.10);
+    color: #b86a00;
+    text-align: center;
+    padding: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    border-bottom: 1px solid var(--surface-divider);
+    letter-spacing: -0.005em;
+}
+
+/* ---- Terminal ------------------------------------------------------------ */
+.term-host {
+    background: #1d1d1f;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-card);
+    padding: 0.75rem 0.9rem;
+    min-height: 360px;
+    color: #e4e4e7;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow: auto;
+}
+
+/* ---- Login --------------------------------------------------------------- */
+.login-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 1.5rem;
+    background: var(--surface-ground);
+}
+
+.login-card {
+    width: 340px;
+    max-width: 100%;
+    box-shadow: var(--shadow-pop);
+    border-radius: 14px;
+}
+
+.login-card .p-card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-align: center;
+    justify-content: center;
+}
+
+/* ---- Heatmap ------------------------------------------------------------- */
+.heatmap {
+    display: grid;
+    gap: 2px;
+}
+
+.heatmap .cell {
+    width: 100%;
+    height: 12px;
+    border-radius: 2px;
+}
+
+/* ---- Scrollbars (Mac-style overlay) ------------------------------------- */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.20);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.35);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+}
+
+/* ---- Responsive ---------------------------------------------------------- */
+.hamburger {
+    display: none;
+}
+
+@media (max-width: 760px) {
+    .content {
+        padding: 1rem 0.85rem 1.5rem;
+    }
+
+    .sidebar {
+        position: absolute;
+        z-index: 30;
+        height: 100%;
+        margin-left: calc(-1 * var(--sidebar-w) - 1rem);
+    }
+
+    .sidebar.open {
+        margin-left: 0;
+    }
+
+    .hamburger {
+        display: inline-flex;
+    }
+
+    .window-controls {
+        display: none;
+    }
+}

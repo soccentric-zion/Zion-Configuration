@@ -1,0 +1,63 @@
+# ============================================================================
+# Embedded Linux Device Dashboard — example configuration
+# Copy to config.yaml and edit. Every value below has a documented default in
+# app/config.py; anything omitted here falls back to that default.
+# ============================================================================
+
+# --- HTTP server -----------------------------------------------------------
+server:
+  host: "0.0.0.0"        # bind address
+  port: 8000             # dashboard port
+  # Serve Vue/PrimeVue from local vendor/ instead of the public CDN.
+  # Set true for air-gapped devices after populating static/vendor/ (see README).
+  local_vendor: false
+
+# --- Authentication --------------------------------------------------------
+auth:
+  # CHANGE THIS in production. If left as the default a random secret is
+  # generated at startup (sessions reset on restart).
+  jwt_secret: "change-me-to-a-long-random-string"
+  jwt_algorithm: "HS256"
+  access_token_ttl_minutes: 10   # JWT in localStorage (#41) — keep the window short
+  # Brute-force lockout
+  max_failed_logins: 5
+  lockout_minutes: 15
+  # Seeded on first run; forced password change on first login.
+  default_admin_user: "admin"
+  default_admin_password: "admin"
+
+# --- Database --------------------------------------------------------------
+database:
+  path: "data/dashboard.db"
+
+# --- SWUpdate / OTA --------------------------------------------------------
+swupdate:
+  base_url: "http://127.0.0.1:8090"   # SWUpdate REST API
+  ws_url: "ws://127.0.0.1:8090/ws"    # SWUpdate progress WebSocket
+
+# --- File manager allowlist (hard security boundary) -----------------------
+files:
+  allowed_paths:
+    - "/etc"
+    - "/var/log"
+    - "/data"
+  max_edit_bytes: 1048576   # 1 MiB — files larger than this are not editable
+
+# --- Telemetry / history sampling ------------------------------------------
+sampling:
+  metrics_interval_seconds: 1     # live system health push interval
+  history_interval_seconds: 10    # SQLite sensor/metric history sampling
+  history_retention_days: 7
+
+# --- Alert thresholds (defaults; rules are editable in the UI) --------------
+thresholds:
+  cpu_temp_warn_c: 70
+  cpu_temp_crit_c: 85
+  disk_usage_warn_pct: 85
+  mem_usage_warn_pct: 90
+
+# --- Simulation overrides --------------------------------------------------
+# Force every HAL into simulation regardless of host capabilities. Useful for
+# demos and CI on machines that *do* have some real interfaces.
+simulation:
+  force: false

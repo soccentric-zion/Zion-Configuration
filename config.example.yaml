@@ -1,0 +1,111 @@
+# Embedded Linux Device Dashboard — example configuration.
+#
+# Copy to ./config.yaml (or point DASHBOARD_CONFIG at it) and edit. EVERY field
+# has a safe default, so an empty file — or no file at all — still boots. Only
+# override what you need.
+
+server:
+  host: 0.0.0.0          # bind address
+  port: 8000             # HTTP port
+  local_vendor: false    # true to load frontend libs from /static/vendor (air-gap)
+
+auth:
+  # Leave jwt_secret unset to auto-generate a random key on each start, or set a
+  # long random string to keep sessions valid across restarts.
+  jwt_secret: "change-me-to-a-long-random-string"
+  jwt_algorithm: HS256
+  access_token_ttl_minutes: 10   # JWT in localStorage (#41) — keep the window short
+  max_failed_logins: 5         # lock the account after this many failures...
+  lockout_minutes: 15          # ...for this long
+  default_admin_user: admin
+  default_admin_password: admin  # forced to change on first login
+
+database:
+  path: data/dashboard.db   # SQLite file (WAL mode)
+
+swupdate:
+  base_url: http://127.0.0.1:8090   # real SWUpdate endpoint; unreachable -> simulated OTA
+  ws_url: ws://127.0.0.1:8090/ws
+
+files:
+  # Allowlisted roots for the file manager / log viewer. Paths are canonicalized
+  # and traversal outside these roots is rejected (403).
+  allowed_paths:
+    - /etc
+    - /var/log
+    - /data
+  max_edit_bytes: 1048576   # max in-browser editable file size (1 MiB)
+
+sampling:
+  metrics_interval_seconds: 1.0    # live metric push cadence
+  history_interval_seconds: 10.0   # persisted history cadence
+  history_retention_days: 7
+
+thresholds:
+  cpu_temp_warn_c: 70
+  cpu_temp_crit_c: 85
+  disk_usage_warn_pct: 85
+  mem_usage_warn_pct: 90
+
+simulation:
+  # Force every HAL module into simulation even when real hardware is present.
+  # Useful on a dev laptop or in CI. Auto-detected per-module when false.
+  force: false
+
+# Capability manifest (audit "config.yaml — master module switch").
+# `active_platform` selects which platform block the dashboard loads;
+# `platforms.<name>.modules` lists each high-level module the platform
+# exposes. The SPA hides nav entries and blocks routes whose module is
+# `enabled: false`. `apply_mode` is one of live | next-boot | guarded |
+# read-only — the apply pipeline uses it to decide the lifecycle path.
+#
+# The shipped defaults match the generic Linux build (audit §17):
+# core sections 1-13 enabled; conditional 14-17 declared but disabled.
+# A per-platform fork edits only this block — no code changes needed.
+capabilities:
+  active_platform: generic
+  platforms:
+    generic:
+      name: Generic Linux
+      codename: generic
+      description: Generic embedded Linux build.
+      modules:
+        system:        { enabled: true,  apply_mode: live }
+        networking:    { enabled: true,  apply_mode: live }
+        peripherals:   { enabled: true,  apply_mode: next-boot }
+        boot:          { enabled: true,  apply_mode: guarded }
+        services:      { enabled: true,  apply_mode: live }
+        logs:          { enabled: true,  apply_mode: live }
+        health:        { enabled: true,  apply_mode: read-only }
+        ota:           { enabled: true,  apply_mode: guarded }
+        security:      { enabled: true,  apply_mode: guarded }
+        storage:       { enabled: true,  apply_mode: guarded }
+        users:         { enabled: true,  apply_mode: live }
+        backup:        { enabled: true,  apply_mode: guarded }
+        factory_reset: { enabled: true,  apply_mode: guarded }
+        coprocessor:   { enabled: false, apply_mode: guarded }
+        fpga:          { enabled: false, apply_mode: guarded }
+        industrial_io: { enabled: false, apply_mode: next-boot }
+        virtualization:{ enabled: false, apply_mode: guarded }
+    acadia:
+      name: Raspberry Pi
+      codename: Acadia
+      description: Custom Yocto-based embedded Linux turning the world's most popular SBC into a real industrial product platform.
+      modules:
+        system:        { enabled: true,  apply_mode: live }
+        networking:    { enabled: true,  apply_mode: live }
+        peripherals:   { enabled: true,  apply_mode: next-boot }
+        boot:          { enabled: true,  apply_mode: guarded }
+        services:      { enabled: true,  apply_mode: live }
+        logs:          { enabled: true,  apply_mode: live }
+        health:        { enabled: true,  apply_mode: read-only }
+        ota:           { enabled: true,  apply_mode: guarded }
+        security:      { enabled: true,  apply_mode: guarded }
+        storage:       { enabled: true,  apply_mode: guarded }
+        users:         { enabled: true,  apply_mode: live }
+        backup:        { enabled: true,  apply_mode: guarded }
+        factory_reset: { enabled: true,  apply_mode: guarded }
+        coprocessor:   { enabled: true,  apply_mode: guarded }   # Pico companion
+        fpga:          { enabled: false, apply_mode: guarded }
+        industrial_io: { enabled: false, apply_mode: next-boot }
+        virtualization:{ enabled: false, apply_mode: guarded }

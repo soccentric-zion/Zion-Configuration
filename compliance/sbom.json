@@ -1,0 +1,54 @@
+{
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.5",
+    "version": 1,
+    "metadata": {
+        "component": {
+            "name": "device-dashboard",
+            "version": "1.0.0",
+            "type": "application"
+        }
+    },
+    "components": [
+        {
+            "type": "library",
+            "name": "fastapi",
+            "version": "0.115.6"
+        },
+        {
+            "type": "library",
+            "name": "uvicorn",
+            "version": "0.34.0"
+        },
+        {
+            "type": "library",
+            "name": "pydantic",
+            "version": "2.10.4"
+        },
+        {
+            "type": "library",
+            "name": "aiosqlite",
+            "version": "0.20.0"
+        },
+        {
+            "type": "library",
+            "name": "PyJWT",
+            "version": "2.10.1"
+        },
+        {
+            "type": "library",
+            "name": "bcrypt",
+            "version": "4.2.1"
+        },
+        {
+            "type": "library",
+            "name": "cryptography",
+            "version": "44.0.0"
+        },
+        {
+            "type": "library",
+            "name": "psutil",
+            "version": "6.1.1"
+        }
+    ]
+}

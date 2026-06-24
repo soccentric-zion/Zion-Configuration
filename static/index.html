@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Device Dashboard</title>
+
+    <!-- All assets are served locally from /static/vendor so the device makes
+       ZERO external requests at runtime (air-gap friendly). Repopulate with
+       deploy/fetch-vendor.sh. To use the public CDN instead, swap these paths
+       for the matching unpkg.com URLs (see README). -->
+    <link rel="stylesheet" href="/static/vendor/primeicons/primeicons.css" />
+    <link rel="stylesheet" href="/static/vendor/primeflex.min.css" />
+    <link rel="stylesheet" href="/static/vendor/primevue.min.css" />
+    <link id="theme-light" rel="stylesheet" href="/static/vendor/themes/lara-light-blue.css" />
+    <link id="theme-dark" rel="stylesheet" href="/static/vendor/themes/lara-dark-blue.css" disabled />
+    <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script src="/static/vendor/vue.global.prod.js"></script>
+    <script src="/static/vendor/vue-router.global.prod.js"></script>
+    <script src="/static/vendor/chart.umd.js"></script>
+    <script src="/static/vendor/primevue-all.min.js"></script>
+
+    <!-- PrimeVue's Chart component does `import("chart.js/auto")`; map that bare
+         specifier to a local shim that re-exports the global Chart (set above). -->
+    <script type="importmap">
+    { "imports": { "chart.js/auto": "/static/vendor/chartjs-auto-shim.js" } }
+    </script>
+
+    <script type="module" src="/static/js/app.js"></script>
+</body>
+
+</html>

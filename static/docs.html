@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>API Docs</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2rem;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Embedded Linux Device Dashboard — API</h1>
+    <p>The machine-readable OpenAPI schema is available at
+        <a href="/api/openapi.json">/api/openapi.json</a>.
+    </p>
+    <p>All endpoints (except <code>/api/login</code> and static assets) require a
+        Bearer JWT. Obtain one via <code>POST /api/login</code>.</p>
+    <pre id="out">Loading schema…</pre>
+    <script>
+        fetch("/api/openapi.json").then(r => r.json()).then(s => {
+            const paths = Object.entries(s.paths).map(([p, ops]) =>
+                p + "  [" + Object.keys(ops).join(", ").toUpperCase() + "]").join("\n");
+            document.getElementById("out").textContent = paths;
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,57 @@
+[
+    {
+        "name": "fastapi",
+        "version": "0.115.6",
+        "license": "MIT"
+    },
+    {
+        "name": "uvicorn",
+        "version": "0.34.0",
+        "license": "BSD-3-Clause"
+    },
+    {
+        "name": "pydantic",
+        "version": "2.10.4",
+        "license": "MIT"
+    },
+    {
+        "name": "aiosqlite",
+        "version": "0.20.0",
+        "license": "MIT"
+    },
+    {
+        "name": "PyJWT",
+        "version": "2.10.1",
+        "license": "MIT"
+    },
+    {
+        "name": "bcrypt",
+        "version": "4.2.1",
+        "license": "Apache-2.0"
+    },
+    {
+        "name": "cryptography",
+        "version": "44.0.0",
+        "license": "Apache-2.0 OR BSD-3-Clause"
+    },
+    {
+        "name": "psutil",
+        "version": "6.1.1",
+        "license": "BSD-3-Clause"
+    },
+    {
+        "name": "Vue",
+        "version": "3.4.38",
+        "license": "MIT"
+    },
+    {
+        "name": "PrimeVue",
+        "version": "3.53.1",
+        "license": "MIT"
+    },
+    {
+        "name": "Chart.js",
+        "version": "4.4.1",
+        "license": "MIT"
+    }
+]

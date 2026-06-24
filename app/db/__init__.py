@@ -1,0 +1,5 @@
+"""Database package: aiosqlite connection management + schema migrations."""
+
+from app.db.database import Database, get_db
+
+__all__ = ["Database", "get_db"]
