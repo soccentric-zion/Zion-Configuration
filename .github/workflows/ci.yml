@@ -1,0 +1,66 @@
+# SoCcentric WebConfig CI (spec §6: build all three cross-targets on every commit).
+name: webconfig-ci
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  CARGO_TERM_COLOR: always
+  # Offline build (spec §2): vendored crates are committed.
+  CARGO_NET_OFFLINE: true
+
+jobs:
+  host-test:
+    name: Build, test, lint (x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.75.0
+        with:
+          components: rustfmt, clippy
+      - name: Install cross linkers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf
+      - name: Format check
+        run: make fmt
+      - name: Lint
+        run: make lint
+      - name: Test (fake sysroot, no hardware)
+        run: make test
+      - name: Build
+        run: make build
+
+  cross-build:
+    name: Cross-build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - aarch64-unknown-linux-gnu
+          - armv7-unknown-linux-gnueabihf
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.75.0
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install cross linker
+        run: |
+          sudo apt-get update
+          case "${{ matrix.target }}" in
+            aarch64-unknown-linux-gnu) sudo apt-get install -y gcc-aarch64-linux-gnu ;;
+            armv7-unknown-linux-gnueabihf) sudo apt-get install -y gcc-arm-linux-gnueabihf ;;
+          esac
+      - name: Release build
+        run: cargo build --workspace --release --target ${{ matrix.target }}
+      - name: Binary size budget (3–6 MB)
+        run: |
+          BIN="target/${{ matrix.target }}/release/webconfigd"
+          KB=$$(stat -c %s "$$BIN")
+          echo "webconfigd size: $$((KB/1024)) KB"
+          # Spec §2 target is 3–6 MB; warn (not fail) at first while we tune opt flags.
+          if [ "$$((KB/1024))" -gt 6144 ]; then echo "::warning::binary exceeds 6 MB budget"; fi

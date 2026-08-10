@@ -1,0 +1,16 @@
+# Pinned toolchain for reproducible builds on the Zynq UltraScale+ target and the
+# x86 CI host (spec §6: CI builds all three cross-targets on every commit).
+#
+# edition2024 (stabilized in Rust 1.85) is required by current transitive
+# crates (e.g. idna_adapter, indexmap) pulled by the dependency tree. The pin
+# moved from 1.75.0 to 1.97.1 (a current stable) for that reason; the exact
+# version is still pinned for reproducibility.
+[toolchain]
+channel = "1.97.1"
+components = ["rustfmt", "clippy"]
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "armv7-unknown-linux-gnueabihf",
+]
+profile = "minimal"

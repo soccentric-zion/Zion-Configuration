@@ -1,0 +1,50 @@
+# webconfigd.service — hardened, non-root (spec §4.8).
+#
+# Listens on :8443 (TLS). The UI port is always reachable regardless of the
+# service-based firewall (the firewall applier never blocks it).
+
+[Unit]
+Description=SoCcentric on-device WebConfig daemon
+After=network.target systemd-networkd.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=webconfig
+Group=webconfig
+EnvironmentFile=/etc/default/webconfigd
+ExecStart=/usr/bin/webconfigd
+
+# --- Hardening (spec §4.8) ---------------------------------------------------
+# Read-only root + /usr; the daemon may only write its data partition.
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/webconfig
+# No new privileges; no executing setuid binaries.
+NoNewPrivileges=true
+# Drop all capabilities except the ones genuinely needed (none for v1: the
+# daemon uses D-Bus/polkit for privileged actions, not raw capabilities).
+CapabilityBoundingSet=
+AmbientCapabilities=
+# Filesystem namespacing: deny device access and kernel modules.
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+# Network: the daemon must listen, so we cannot use PrivateNetwork.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# Restrict syscalls to a sane set; deny ptrace/process meddling.
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictNamespaces=true
+# Resource limits (spec §2: <15 MB RAM). The kernel enforces a ceiling.
+MemoryMax=32M
+# Restart policy.
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,122 @@
+/* Design tokens — shadcn/ui-inspired light theme. Zinc neutral scale +
+  light-blue accent. Every color/spacing/radius value used elsewhere in the
+   stylesheet is defined here so the whole theme can be retuned in one file. */
+
+:root {
+  /* Neutrals (zinc scale) */
+  --zinc-50: #fafafa;
+  --zinc-100: #f4f4f5;
+  --zinc-200: #e4e4e7;
+  --zinc-300: #d4d4d8;
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;
+  --zinc-600: #52525b;
+  --zinc-700: #3f3f46;
+  --zinc-800: #27272a;
+  --zinc-900: #18181b;
+
+  /* Semantic surface colors */
+  --background: #f8fafc;
+  --foreground: var(--zinc-900);
+  --muted: var(--zinc-100);
+  --muted-foreground: var(--zinc-500);
+  --card: #ffffff;
+  --card-foreground: var(--zinc-900);
+  --popover: #ffffff;
+  --popover-foreground: var(--zinc-900);
+  --border: var(--zinc-200);
+  --input: var(--zinc-200);
+  --ring: #93c5fd;
+
+  /* Accent (light blue) */
+  --primary: #0ea5e9;
+  --primary-foreground: #ffffff;
+  --primary-hover: #0284c7;
+  --primary-light: #7dd3fc;
+  --sidebar-bg: var(--muted);
+  --secondary: var(--zinc-100);
+  --secondary-foreground: var(--zinc-900);
+  --secondary-hover: var(--zinc-200);
+  --accent: var(--zinc-100);
+  --accent-foreground: var(--zinc-900);
+
+  /* Status colors */
+  --success: #16a34a;
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
+  --warning: #d97706;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --destructive: #dc2626;
+  --destructive-bg: #fef2f2;
+  --destructive-border: #fecaca;
+  --destructive-foreground: #ffffff;
+  --info: #0284c7;
+  --info-bg: #f0f9ff;
+  --info-border: #bae6fd;
+
+  /* Sidebar */
+  --sidebar-bg: var(--background);
+  --sidebar-border: transparent;
+  --sidebar-foreground: var(--zinc-700);
+  --sidebar-muted: var(--zinc-500);
+  --sidebar-active-bg: #eff6ff;
+  --sidebar-active-foreground: var(--primary);
+  --sidebar-hover-bg: var(--zinc-100);
+
+  /* Shape */
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, .05), 0 1px 1px rgba(15, 23, 42, .03);
+  --shadow-sm: 0 2px 5px rgba(15, 23, 42, .08), 0 1px 2px rgba(15, 23, 42, .04);
+  --shadow-md: 0 8px 18px rgba(15, 23, 42, .09), 0 2px 5px rgba(15, 23, 42, .05);
+  --shadow-lg: 0 16px 36px rgba(15, 23, 42, .14), 0 5px 10px rgba(15, 23, 42, .05);
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  /* Weights — one scale, used everywhere so emphasis is consistent. */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  /* Line-height — body 1.5, dense UI 1.5, logs/pre relaxed. */
+  --leading-none: 1;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+  /* Letter-spacing — tight for large titles, wide for uppercase labels. */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;
+
+  /* Layout */
+  --sidebar-width: 248px;
+  --sidebar-width-collapsed: 68px;
+  --topbar-height: 56px;
+  --content-max-width: 1080px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+}

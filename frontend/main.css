@@ -1,0 +1,10 @@
+/* SoCcentric WebConfig — entry stylesheet. Split into small, single-concern
+   partials under styles/ so any one part of the design system can be found
+   and edited without wading through the rest (spec §2: no build step, so
+   plain @import is used instead of a bundler). */
+
+@import "styles/tokens.css";
+@import "styles/base.css";
+@import "styles/layout.css";
+@import "styles/components.css";
+@import "styles/pages.css";

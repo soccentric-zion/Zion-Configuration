@@ -1,0 +1,145 @@
+{
+  "platform": "zion",
+  "model": "zynq-ultrascale-plus",
+  "board_name": "Kria KR260 (Zion)",
+  "has_rtc": true,
+  "has_tpm": false,
+  "secure_boot": true,
+  "service_allowlist": [
+    "sshd.service",
+    "systemd-networkd.service",
+    "systemd-resolved.service",
+    "wpa_supplicant.service",
+    "webconfigd.service"
+  ],
+  "peripherals": [
+    {
+      "id": "ttyPS0",
+      "device": "/dev/ttyPS0",
+      "human_name": "PS debug UART",
+      "kind": "serial",
+      "caps": { "modes": ["rs232"] }
+    },
+    {
+      "id": "can0",
+      "device": "can0",
+      "human_name": "CAN channel 0 (PS CAN)",
+      "kind": "can",
+      "caps": { "fd": true, "termination_gpio": "gpio-can0-term" }
+    },
+    {
+      "id": "can1",
+      "device": "can1",
+      "human_name": "CAN channel 1 (PS CAN)",
+      "kind": "can",
+      "caps": { "fd": true }
+    },
+    {
+      "id": "i2c-0",
+      "device": "/dev/i2c-0",
+      "human_name": "I2C bus 0 (PS)",
+      "kind": "i2c",
+      "caps": {}
+    },
+    {
+      "id": "i2c-1",
+      "device": "/dev/i2c-1",
+      "human_name": "I2C bus 1 (PS)",
+      "kind": "i2c",
+      "caps": {}
+    },
+    {
+      "id": "spi0",
+      "device": "/dev/spidev0.0",
+      "human_name": "SPI bus 0",
+      "kind": "spi",
+      "caps": {}
+    },
+    {
+      "id": "gpio-led-system",
+      "device": "gpiochip0 line 0",
+      "human_name": "System status LED",
+      "kind": "gpio",
+      "caps": { "direction": "out", "active_low": false, "function": "led", "role": "system" }
+    },
+    {
+      "id": "gpio-btn-recovery",
+      "device": "gpiochip0 line 3",
+      "human_name": "Recovery button",
+      "kind": "gpio",
+      "caps": { "direction": "in", "active_low": true }
+    },
+    {
+      "id": "gpio-can0-term",
+      "device": "gpiochip0 line 5",
+      "human_name": "CAN0 termination",
+      "kind": "gpio",
+      "caps": { "direction": "out" }
+    },
+    {
+      "id": "pl-fabric",
+      "device": "/dev/uio0",
+      "human_name": "PL fabric south-bridge (FPGA)",
+      "kind": "fpga",
+      "caps": { "role": "south-bridge" }
+    },
+    {
+      "id": "rpu-r5",
+      "device": "rproc0",
+      "human_name": "Cortex-R5 real-time (RPU)",
+      "kind": "mcu",
+      "caps": {
+        "protocol": "openamp",
+        "signed_fw": true,
+        "settings_schema": "app:mcu-stm32",
+        "firmware_pubkey_ed25519": "PLACEHOLDER",
+        "_firmware_pubkey_note": "PLACEHOLDER — replace with the real Cortex-R5 firmware-signing public key at BSP provisioning time"
+      }
+    },
+    {
+      "id": "cam0",
+      "device": "/dev/video0",
+      "human_name": "PL MIPI CSI camera 0",
+      "kind": "camera",
+      "caps": {}
+    },
+    {
+      "id": "thermal-zone-0",
+      "device": "/sys/class/thermal/thermal_zone0",
+      "human_name": "SoC thermal zone",
+      "kind": "thermal",
+      "caps": { "throttle": true }
+    },
+    {
+      "id": "eth0",
+      "device": "eth0",
+      "human_name": "Ethernet 0 (PS GEM)",
+      "kind": "net",
+      "caps": {}
+    },
+    {
+      "id": "wlan0",
+      "device": "wlan0",
+      "human_name": "Wi-Fi",
+      "kind": "net",
+      "caps": { "ap": true }
+    }
+  ],
+  "wifi_radio": {
+    "interface": "wlan0",
+    "hw_mode": "g",
+    "channel": 7
+  },
+  "dashboard_tiles": [
+    { "id": "cpu", "title": "CPU utilization", "metrics": ["cpu.util"], "render": "sparkline" },
+    { "id": "thermal", "title": "Thermal / throttle", "metrics": ["thermal.temp", "temp.throttled"], "render": "state" },
+    { "id": "fpga", "title": "PL fabric", "metrics": ["fpga.temp", "fpga.volt"], "render": "state" },
+    { "id": "rpu", "title": "Cortex-R5 heartbeat", "metrics": ["mcu.heartbeat", "mcu.fw_version"], "render": "state" }
+  ],
+  "default_alert_rules": [
+    { "id": "disk-full", "enabled": true, "metric": "disk.pct", "comparison": ">", "threshold": 90, "duration_secs": 60, "actions": ["ui"] },
+    { "id": "watchdog-reset", "enabled": true, "metric": "boot.watchdog", "comparison": ">", "threshold": 0, "duration_secs": 0, "actions": ["ui"] },
+    { "id": "throttling", "enabled": true, "metric": "temp.throttled", "comparison": ">", "threshold": 0, "duration_secs": 30, "actions": ["ui"] },
+    { "id": "cert-expiry", "enabled": true, "metric": "cert.*", "comparison": "<", "threshold": 30, "duration_secs": 0, "actions": ["ui"] }
+  ]
+}

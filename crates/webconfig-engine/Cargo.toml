@@ -1,0 +1,38 @@
+[package]
+name = "webconfig-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Canonical config store, schema engine, and system appliers for SoCcentric WebConfig (HTTP-free, hardware-free testable)."
+
+[lib]
+name = "webconfig_engine"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+jsonschema = { workspace = true }
+rusqlite = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+time = { workspace = true }
+uuid = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+base64 = { workspace = true }
+argon2 = { workspace = true }
+rand_core = { version = "0.6", default-features = false, features = ["std"] }
+# `ring` is already in the vendored supply chain (rustls/rcgen/tokio-rustls all
+# depend on it); listing it directly here only exposes the already-built crate
+# to the engine for AEAD encryption of secret-bearing backups (spec §4.4). No
+# new external crate is introduced.
+ring = { version = "0.17", default-features = false }
+
+[dev-dependencies]
+tempfile = "3.10"

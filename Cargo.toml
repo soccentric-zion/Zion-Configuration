@@ -1,0 +1,97 @@
+# SoCcentric WebConfig — on-device configuration web UI for the Zion
+# (Zynq UltraScale+) Yocto/embedded Linux platform.
+#
+# This is a Cargo workspace. The daemon binary lives in `crates/webconfigd` and
+# the reusable, HTTP-free config engine lives in `crates/webconfig-engine` so
+# the engine can be unit-tested against a tempdir fake sysroot on x86 CI with no
+# hardware (spec §6).
+#
+# Hard constraints (spec §2): backend < 15 MB resident RAM, < 10 MB image
+# addition, exactly one daemon, target binary 3–6 MB. The release profile below
+# is the *exact* profile mandated by the spec — do not relax it.
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/webconfig-engine",
+    "crates/webconfigd",
+]
+
+# Pinned to keep the vendored offline tarball (spec §2) reproducible and to
+# guarantee all three cross-targets (aarch64, armv7, x86_64) build consistently.
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+# Proprietary/closed (matches README.md and every meta-webconfig/*.bb recipe's
+# LICENSE = "CLOSED") — this repo is SoCcentric internal IV&V tooling, not
+# open source. `license-file` (not `license`, which expects an SPDX
+# expression) points at the real LICENSE file the Yocto recipes'
+# LIC_FILES_CHKSUM already reference.
+license-file = "LICENSE"
+repository = "https://github.com/soccentric/Zion-Configuration"
+authors = ["SoCcentric IV&V"]
+
+[workspace.dependencies]
+# HTTP / async runtime
+axum = { version = "0.7", default-features = false, features = ["http1", "http2", "json", "original-uri", "query", "macros", "tokio"] }
+tokio = { version = "1.36", default-features = false, features = ["rt", "macros", "net", "signal", "sync", "time", "io-util", "fs"] }
+tower = { version = "0.4", default-features = false, features = ["util"] }
+# Low-level TLS connection serving (spec §4.8: manual TlsAcceptor loop feeding
+# accepted streams to the axum router, since `axum::serve` only takes a bare
+# TcpListener). Mirrors axum's own internal `serve()` implementation.
+hyper = { version = "1", default-features = false }
+hyper-util = { version = "0.1", default-features = false, features = ["server-auto", "tokio", "service"] }
+tower-http = { version = "0.5", default-features = false, features = ["fs", "trace", "compression-gzip", "cors", "limit"] }
+tower-sessions = { version = "0.10", default-features = false, features = ["axum-core"] }
+
+# TLS — no OpenSSL anywhere (spec §2)
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+rustls-pemfile = { version = "2.1", default-features = false, features = ["std"] }
+rcgen = { version = "0.13", default-features = false, features = ["pem", "ring"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "logging"] }
+
+# Serde + validation
+serde = { version = "1.0", default-features = false, features = ["derive", "std"] }
+serde_json = { version = "1.0", default-features = false, features = ["std"] }
+serde_yaml = "0.9"
+jsonschema = { version = "0.17", default-features = false }
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Auth
+argon2 = { version = "0.5", default-features = false, features = ["alloc", "password-hash"] }
+
+# D-Bus to systemd — no libdbus (spec §2)
+zbus = { version = "4.1", default-features = false, features = ["tokio"] }
+
+# Observability
+tracing = { version = "0.1", default-features = false, features = ["std", "release_max_level_info"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt", "smallvec"] }
+
+# Error handling
+thiserror = { version = "1.0", default-features = false }
+anyhow = { version = "1.0", default-features = false, features = ["std"] }
+
+# Misc helpers
+time = { version = "0.3", default-features = false, features = ["std", "formatting", "parsing", "macros"] }
+uuid = { version = "1.7", default-features = false, features = ["v4", "std"] }
+hex = { version = "0.4", default-features = false, features = ["std"] }
+base64 = { version = "0.22", default-features = false, features = ["std"] }
+sha2 = { version = "0.10", default-features = false, features = ["std"] }
+async-trait = "0.1"
+futures-util = { version = "0.3", default-features = false }
+http = "1.0"
+
+# Dev-only
+[profile.dev]
+opt-level = 0
+debug = true
+
+# The exact release profile mandated by spec §2. Do not change without
+# re-measuring the binary-size and resident-RAM budgets.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

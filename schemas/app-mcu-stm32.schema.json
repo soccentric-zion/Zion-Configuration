@@ -1,0 +1,62 @@
+{
+  "id": "app:mcu-stm32",
+  "title": "STM32 companion MCU settings",
+  "groups": [
+    {
+      "id": "heartbeat",
+      "title": "Heartbeat & watchdog",
+      "fields": [
+        {
+          "id": "heartbeat_interval_ms",
+          "title": "Heartbeat interval (ms)",
+          "field_type": "int",
+          "required": true,
+          "validation": { "min": 50, "max": 60000 },
+          "help": "How often the MCU reports a heartbeat over the soccentric-mcu link."
+        },
+        {
+          "id": "watchdog_timeout_ms",
+          "title": "Watchdog timeout (ms)",
+          "field_type": "int",
+          "required": true,
+          "validation": { "min": 100, "max": 300000 },
+          "help": "MCU-side watchdog timeout; the MCU resets itself if no heartbeat is serviced within this window."
+        }
+      ]
+    },
+    {
+      "id": "diagnostics",
+      "title": "Diagnostics",
+      "fields": [
+        {
+          "id": "debug_logging",
+          "title": "Enable verbose MCU logging",
+          "field_type": "bool",
+          "help": "Streams additional MCU-side debug output over the link; disable for normal operation."
+        },
+        {
+          "id": "log_level",
+          "title": "Log level",
+          "field_type": "enum",
+          "options": [
+            { "value": "error", "label": "Error" },
+            { "value": "warn", "label": "Warning" },
+            { "value": "info", "label": "Info" },
+            { "value": "debug", "label": "Debug" }
+          ]
+        }
+      ]
+    }
+  ],
+  "validate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "heartbeat_interval_ms": { "type": "integer", "minimum": 50, "maximum": 60000 },
+      "watchdog_timeout_ms": { "type": "integer", "minimum": 100, "maximum": 300000 },
+      "debug_logging": { "type": "boolean" },
+      "log_level": { "type": "string", "enum": ["error", "warn", "info", "debug"] }
+    },
+    "required": ["heartbeat_interval_ms", "watchdog_timeout_ms"]
+  }
+}

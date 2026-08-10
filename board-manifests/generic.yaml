@@ -1,0 +1,139 @@
+# Generic Linux board customization.
+# Copy this file to /etc/webconfig/board.yaml and edit it for the host.
+platform: generic-linux
+model: generic-linux
+board_name: Generic Linux host
+has_rtc: true
+has_tpm: false
+secure_boot: false
+service_allowlist:
+  - ssh.service
+  - sshd.service
+  - systemd-networkd.service
+  - systemd-resolved.service
+  - systemd-timesyncd.service
+  - NetworkManager.service
+  - wpa_supplicant.service
+  - systemd-journald.service
+  - cron.service
+  - crond.service
+  - dbus.service
+  - docker.service
+  - containerd.service
+  - nginx.service
+  - webconfigd.service
+peripherals: []
+dashboard_tiles: []
+default_alert_rules:
+  - id: disk-full
+    enabled: true
+    metric: disk.pct
+    comparison: ">"
+    threshold: 90
+    duration_secs: 60
+    actions: ["ui"]
+  - id: watchdog-reset
+    enabled: true
+    metric: boot.watchdog
+    comparison: ">"
+    threshold: 0
+    duration_secs: 0
+    actions: ["ui"]
+config_defaults:
+  system:
+    hostname: null
+    asset_tag: null
+    hardware_revision: null
+    serial_number: null
+    time:
+      timezone: null
+      ntp_enabled: true
+      ptp_enabled: false
+      ptp_interface: null
+      ptp_domain: null
+      gps_enabled: false
+      gps_device: null
+      gps_pps_device: null
+      manual_datetime: null
+    ssh:
+      sshd_enabled: true
+      serial_getty_enabled: false
+      authorized_keys: ''
+    ntp_servers: []
+  network:
+    interfaces: []
+    wifi: []
+    regulatory_domain: null
+    dns_servers: []
+    firewall:
+      enabled: true
+      default_open: []
+      open_ports: []
+    confirm_window_secs: 90
+    ap_mode:
+      enabled: false
+      trigger: no-config
+      ssid: SoCcentric-Setup
+      passphrase: change-me-now
+    vlan: []
+    bridges: []
+    cellular: []
+    cellular_5g:
+      enabled: false
+      modem: null
+      apn: null
+      pin: null
+      username: null
+      password: null
+      roaming: false
+      auto_connect: true
+  services:
+    mqtt:
+      enabled: false
+    log_levels: {}
+  updates:
+    ota:
+      enabled: false
+    backup:
+      enabled: false
+      backup_enabled: true
+      restore_enabled: true
+    https_redirect: false
+  monitoring:
+    poll_interval_secs: 3
+    telemetry:
+      enabled: false
+      publish_interval_secs: 60
+      include_diagnostics: false
+  logs:
+    storage: volatile
+    max_size_bytes: 104857600
+    retention_days: 30
+    remote_syslog: null
+  alerts:
+    enabled: false
+    rules: []
+    webhooks: []
+    mqtt_event_topic: null
+    history_limit: 1000
+  security:
+    idle_timeout_secs: 900
+    allow_plain_http: false
+    wireguard:
+      enabled: false
+      port: 51820
+      private_key: null
+      peers: []
+    certificates: []
+  io:
+    serial: []
+    serial_enabled: true
+    can: []
+    can_enabled: true
+    gpio: []
+    gpio_enabled: true
+    cameras: []
+    cameras_enabled: true
+    mcu: null
+    board_leds: {}
+  app_settings: {}

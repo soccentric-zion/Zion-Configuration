@@ -1,0 +1,47 @@
+// polkit rules for webconfigd (spec §3: privileged ops via D-Bus + polkit).
+//
+// The non-root daemon needs to start/stop/restart/enable a curated set of
+// systemd units (the manifest service_allowlist) and reboot/poweroff the
+// device. It is NOT granted blanket Manager access — only the verbs and units
+// it actually uses. This is the real-systemd authorization path; the mock
+// client is used in tests (spec §6/§7).
+
+polkit.addRule(function(action, subject) {
+    // Only the webconfig system user may exercise these actions.
+    if (subject.user !== "webconfig") {
+        return polkit.Result.NOT_HANDLED;
+    }
+
+    // Reboot/poweroff (systemd-logind).
+    if (action.id === "org.freedesktop.login1.reboot" ||
+        action.id === "org.freedesktop.login1.power-off") {
+        return polkit.Result.YES;
+    }
+
+    // systemd Manager unit operations on the curated allowlist only.
+    var managed = action.id === "org.freedesktop.systemd1.manage-units";
+    if (managed) {
+        var unit = action.lookup("unit");
+        var verb = action.lookup("verb"); // start | stop | restart | enable | disable
+        // The allowlist mirrors board-manifests/zion.json's
+        // service_allowlist EXACTLY — update both together when the platform
+        // image changes its curated services (Checkpoint 3.3). rauc.service
+        // and mosquitto.service were previously listed here but are neither
+        // in the manifest's service_allowlist nor managed as systemd units
+        // anywhere in the daemon (RAUC is invoked as a CLI tool, not
+        // start/stop/restart'd as a unit; MQTT connectivity is a plain TCP
+        // check, no local broker) — removed as stale.
+        var allowed = [
+            "sshd.service",
+            "systemd-networkd.service",
+            "systemd-resolved.service",
+            "wpa_supplicant.service",
+            "webconfigd.service"
+        ];
+        if (allowed.indexOf(unit) >= 0) {
+            return polkit.Result.YES;
+        }
+    }
+
+    return polkit.Result.NOT_HANDLED;
+});

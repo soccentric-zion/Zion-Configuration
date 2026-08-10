@@ -1,102 +1,151 @@
-# Low-Impact Web — developer & CI entry point.
+# SoCcentric WebConfig — top-level Makefile.
 #
-# This Makefile is the single source of truth for every common task. Each
-# target is small and documented so it is easy to read and extend: to add a new
-# task, copy a target, give it a `## comment` (it shows up in `make help`) and
-# add it to .PHONY.
+# Per SoCcentric global CLAUDE.md §12, the repo-root Makefile is the single
+# entry point for build/test/lint, wrapping the underlying tool (cargo). The
+# git workflows (§9 step 6) run `make build && make test && make lint`.
 #
-# Quick start:
-#   make install     # create the venv and install everything
-#   make run          # start the dashboard on http://localhost:8000
-#   make validate     # lint + typecheck + tests + coverage gate (CI gate)
+# Targets:
+#   make toolchain  — install rustup + the exact pinned toolchain (one-time
+#                     host setup; see rust-toolchain.toml)
+#   make build      — debug build of the daemon (host target)
+#   make release    — release build with the exact spec §2 profile
+#   make test       — engine + HTTP integration tests (fake sysroot, no HW)
+#   make lint       — clippy + rustfmt --check
+#   make fmt        — format in place
+#   make vendor     — (re)generate the vendored offline crate tarball
+#   make cross      — build all three cross-targets (CI parity)
+#   make run        — run the daemon against the real host (live /proc, real
+#                     backends); persistent state in ./data (dev)
+#   make run-mock   — run against a tempdir fake sysroot (mock backends, no HW)
+#   make stop       — stop the process listening on the WebConfig TCP port
+#   make clean      — remove target/
 
-# Use bash with strict flags for every recipe line.
-SHELL := /bin/bash
-.SHELLFLAGS := -eu -o pipefail -c
+# Install rustup (if missing) plus the exact pinned toolchain, components,
+# and cross targets declared in rust-toolchain.toml (spec §6 host/CI parity).
+# Idempotent — safe to re-run. Needs network access to static.rust-lang.org /
+# sh.rustup.rs; not usable in network-restricted sandboxes.
+toolchain: ## Install rustup + the exact pinned toolchain (one-time host setup)
+	@set -e; \
+	export PATH="$$HOME/.cargo/bin:$$PATH"; \
+	if ! command -v rustup >/dev/null 2>&1; then \
+		echo "==> rustup not found; installing"; \
+		curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+			| sh -s -- -y --default-toolchain none --profile minimal; \
+	fi; \
+	echo "==> installing toolchain $(RUST_CHANNEL) (rustfmt, clippy)"; \
+	rustup toolchain install $(RUST_CHANNEL) --profile minimal \
+		--component rustfmt --component clippy; \
+	echo "==> adding cross targets: $(TARGETS)"; \
+	rustup target add --toolchain $(RUST_CHANNEL) $(TARGETS); \
+	echo "==> ready: $$(rustup run $(RUST_CHANNEL) rustc --version)"
+
+# Prefer the standard rustup installation even when the caller's shell has not
+# sourced ~/.cargo/env; an explicit CARGO override still takes precedence.
+CARGO ?= $(if $(wildcard $(HOME)/.cargo/bin/cargo),$(HOME)/.cargo/bin/cargo,cargo)
+WEBCONFIG_PORT ?= 8443
+export WEBCONFIG_PORT
+TARGETS := x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu armv7-unknown-linux-gnueabihf
+# Pinned channel, read straight from rust-toolchain.toml so this target can't
+# drift from the pin.
+RUST_CHANNEL := $(shell grep -m1 '^channel' rust-toolchain.toml | sed -E 's/.*"([^"]*)".*/\1/')
+
+.PHONY: help build release test lint fmt vendor release-artifacts cross run run-mock stop clean check toolchain
+
+# Bare `make` prints help rather than building, so a stray invocation never
+# kicks off a network install or a build by surprise.
 .DEFAULT_GOAL := help
 
-VENV    := .venv
-PY      := $(VENV)/bin/python
-PIP     := $(VENV)/bin/pip
-APP     := app
-PKG     := app
+help: ## Show this help
+	@echo "SoCcentric WebConfig — available targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: help
-help: ## Show this help.
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| sort \
-		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+build: ## Debug build of the daemon (host target)
+	$(CARGO) build --workspace
 
-# --- environment -----------------------------------------------------------
+release: ## Release build, exact spec §2 profile (opt-level=z, lto, stripped)
+	$(CARGO) build --workspace --release
 
-$(VENV): ## Create the virtual environment.
-	python3 -m venv $(VENV)
-	$(PIP) install --upgrade pip
+test: ## Engine + HTTP integration tests (fake sysroot, no hardware)
+	$(CARGO) test --workspace --all-targets
 
-.PHONY: install
-install: $(VENV) ## Install runtime + dev dependencies into the venv.
-	$(PIP) install -r requirements-dev.txt
+lint: ## clippy -D warnings + rustfmt --check
+	$(CARGO) clippy --workspace --all-targets -- -D warnings
+	$(CARGO) fmt --all -- --check
 
-.PHONY: install-prod
-install-prod: $(VENV) ## Install only runtime dependencies.
-	$(PIP) install -r requirements.txt
+fmt: ## Format the workspace in place
+	$(CARGO) fmt --all
 
-# --- run -------------------------------------------------------------------
+# Regenerate vendored sources for offline builds (spec §2). Run after any
+# dependency change; commit the result.
+vendor: ## Regenerate the vendored offline crate tarball
+	$(CARGO) vendor --versioned-dirs vendor
 
-.PHONY: run
-run: ## Run the dashboard (http://localhost:8000).
-	$(PY) -m app.main
+# Package the release artifacts webconfigd.bb fetches (source + vendor
+# tarballs) and print their real SHA-256 checksums (Checkpoint 3.2). Requires
+# `make vendor` to have been run at least once.
+release-artifacts: ## Package release tarballs + compute real checksums for webconfigd.bb
+	@./tools/release-artifacts.sh
 
-.PHONY: dev
-dev: ## Run with autoreload for development.
-	$(VENV)/bin/uvicorn app.main:create_app --factory --reload --port 8000
+# Cross-compile parity check for CI (spec §6).
+cross: ## Build all three cross-targets (x86_64/aarch64/armv7), CI parity
+	@for t in $(TARGETS); do \
+		echo "==> building $$t"; \
+		$(CARGO) build --workspace --release --target $$t || exit 1; \
+	done
 
-# --- vendoring (air-gap) ---------------------------------------------------
+# Dev run against the REAL host sysroot (spec §6): no WEBCONFIG_SYSROOT is
+# set, so resolve_sysroot() uses "/" and is_real_root() is true — the daemon
+# reads live /proc + /sys and uses the real systemd/update backends (mock
+# backends are only selected for a tempdir fake sysroot). State (config.db,
+# cert.pem, key.pem) is redirected to a persistent, gitignored ./data so the
+# first-boot admin and config survive restarts, mirroring a device's /data
+# partition. Wipe ./data to reset to first-boot. For the no-hardware mock
+# mode, use `make run-mock`.
+run: ## Run the daemon against the real host (live /proc, real backends)
+	@mkdir -p data; \
+	WEBCONFIG_DATA_DIR="$$(pwd)/data" \
+	RUST_LOG=info \
+	$(CARGO) run -p webconfigd -- --
 
-.PHONY: fetch-vendor
-fetch-vendor: ## Re-download and rebuild self-hosted frontend vendor assets.
-	bash deploy/fetch-vendor.sh
+# Mock mode: run against a tempdir fake sysroot so no hardware is required and
+# no host side effects occur (spec §6). Vitals read as zeros; backends are
+# mocks. The tempdir is wiped by the OS on reboot; state does not persist.
+run-mock: ## Run against a tempdir fake sysroot (mock backends, no hardware)
+	WEBCONFIG_SYSROOT=$$(mktemp -d) \
+	WEBCONFIG_DATA_DIR=$$WEBCONFIG_SYSROOT/data \
+	RUST_LOG=info \
+	$(CARGO) run -p webconfigd -- --
 
-# --- quality gates ---------------------------------------------------------
-
-.PHONY: lint
-lint: ## Lint with ruff.
-	$(VENV)/bin/ruff check $(APP) tests
-	$(VENV)/bin/ruff format --check $(APP) tests
-
-.PHONY: format
-format: ## Auto-format with ruff.
-	$(VENV)/bin/ruff format $(APP) tests
-	$(VENV)/bin/ruff check --fix $(APP) tests
-
-.PHONY: typecheck
-typecheck: ## Static type-check the app with mypy --strict.
-	$(VENV)/bin/mypy $(APP)
-
-.PHONY: test
-test: ## Run the unit/integration suite with coverage.
-	$(VENV)/bin/pytest --cov=$(PKG) --cov-report=term-missing
-
-.PHONY: test-e2e
-test-e2e: ## Run Playwright browser tests (skipped if browsers absent).
-	@if [ -d "$(HOME)/.cache/ms-playwright" ] || $(PY) -c "import playwright" 2>/dev/null; then \
-		$(VENV)/bin/pytest tests/e2e -q || true; \
+# Stop the process holding the default daemon port, or an overridden
+# WEBCONFIG_PORT. A clear port is already in the desired state.
+stop: ## Stop the process listening on WEBCONFIG_PORT (default: 8443)
+	@case "$$WEBCONFIG_PORT" in \
+		[1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9]) ;; \
+		*) echo "WEBCONFIG_PORT must be an integer between 1 and 65535" >&2; exit 2 ;; \
+	esac; \
+	if [ "$$WEBCONFIG_PORT" -lt 1 ] || [ "$$WEBCONFIG_PORT" -gt 65535 ]; then \
+		echo "WEBCONFIG_PORT must be an integer between 1 and 65535" >&2; exit 2; \
+	fi; \
+	fuser "$$WEBCONFIG_PORT/tcp" >/dev/null 2>&1; status=$$?; \
+	if [ $$status -eq 0 ]; then \
+		fuser -k -TERM "$$WEBCONFIG_PORT/tcp" >/dev/null || exit $$?; \
+		for attempt in 1 2 3 4 5; do \
+			if ! fuser "$$WEBCONFIG_PORT/tcp" >/dev/null 2>&1; then \
+				echo "Stopped process listening on port $$WEBCONFIG_PORT"; exit 0; \
+			fi; \
+			sleep 1; \
+		done; \
+		echo "Port $$WEBCONFIG_PORT is still in use after SIGTERM" >&2; exit 1; \
+	fi; \
+	if [ $$status -eq 1 ]; then \
+		echo "No process is listening on port $$WEBCONFIG_PORT"; \
 	else \
-		echo "Playwright not installed — skipping e2e (run: $(VENV)/bin/playwright install chromium)"; \
+		echo "Unable to inspect port $$WEBCONFIG_PORT" >&2; exit $$status; \
 	fi
 
-.PHONY: validate
-validate: lint typecheck test ## Full CI gate: lint + typecheck + tests + coverage.
-	@echo "validate: all checks passed."
+clean: ## Remove target/
+	$(CARGO) clean
 
-# --- housekeeping ----------------------------------------------------------
-
-.PHONY: clean
-clean: ## Remove caches, coverage and build artifacts (keeps the venv).
-	rm -rf .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov \
-		test-results playwright-report
-	find . -type d -name __pycache__ -prune -exec rm -rf {} +
-
-.PHONY: distclean
-distclean: clean ## Also remove the virtual environment.
-	rm -rf $(VENV)
+# Convenience alias: full validation gate (§9 step 6).
+check: build test lint ## Full validation gate: build && test && lint
