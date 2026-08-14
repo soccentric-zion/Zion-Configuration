@@ -1,6 +1,6 @@
 # Zion-Configuration
 
-**Remote:** `git@github.com:SiliconCentric/Zion-Configuration.git`
+**Remote:** `git@github.com:soccentric-zion/Zion-Configuration.git`
 **Parent project:** [Zion](../Zion.md) (target hardware: **Zynq UltraScale+**.)
 **Leaf type:** `<Project>-Configuration`
 **Status:** REAL — actively built out
