@@ -1,3 +1,44 @@
+# Zion-Configuration
+
+## Project Summary
+
+Zion-Configuration is an on-device configuration service for Zion Yocto and embedded-Linux systems. It combines a Rust workspace with two principal concerns: `webconfig-engine` owns configuration state, schemas, board manifests, system appliers, monitoring, alerts, and persistence; `webconfigd` exposes the HTTP service, authentication, CSRF protection, section APIs, and server-sent events. The frontend is vanilla JavaScript and is served without a Node build step. JSON schemas drive forms and validation, while `board-manifests/zion.json` supplies board-specific data and a generic fallback supports other environments. The repository also contains a Yocto layer that packages the daemon, static assets, schemas, manifest, and hardened service unit into an image. Existing documentation describes a fake-sysroot harness so RAUC and zbus interactions can be replaced by mocks during host tests; this makes the project testable without physical hardware, but does not prove production integration. The Makefile is the documented entry point for debug and release builds, tests, linting, formatting, vendoring, cross compilation, and a fake-sysroot run. Release settings emphasize a small stripped binary, offline reproducibility, and x86_64, aarch64, and armv7 targets. The flagship safety behavior is provisional network configuration with a commit/confirm window and automatic rollback if connectivity is not confirmed. This README summarizes repository evidence rather than claiming that a device, TLS certificate, role flow, rollback, or Yocto image has been manually exercised. Consult `docs/` for API, schema, board-manifest, and readiness details.
+
+## Feature Status
+
+| # | Name / Description | Implemented? | Test Coverage? | Manual Test |
+|---:|---|---|---|---|
+| 1 | Rust workspace and reproducible release profile | Implemented | `make build`/CI path documented; execution not verified | [ ] Manual verification required |
+| 2 | Configuration store with JSON/ring-file persistence | Implemented | Engine tests documented; scope unknown | [ ] Manual verification required |
+| 3 | Schema-driven frontend forms and validation | Implemented | Schema/API tests present by layout; coverage unknown | [ ] Manual verification required |
+| 4 | Board manifest loading with Zion and generic data | Implemented | Manifest parsing coverage unknown | [ ] Manual verification required |
+| 5 | Axum daemon and section REST APIs | Implemented | HTTP integration tests documented | [ ] Manual verification required |
+| 6 | TLS serving | Implemented | Automated coverage not confirmed | [ ] Manual verification required |
+| 7 | Authentication, roles, and CSRF protection | Implemented | Dedicated breadth unknown | [ ] Manual verification required |
+| 8 | SSE monitoring/alert/event delivery | Partial | Integration coverage not confirmed | [ ] Manual verification required |
+| 9 | Provisional network changes with rollback window | Implemented | Test presence requires review | [ ] Manual verification required |
+| 10 | RAUC/zbus real and fake backends | Partial | Fake-sysroot documented; real backend unverified | [ ] Manual verification required |
+| 11 | Yocto packaging layer and hardened unit | Implemented | BitBake build not verified | [ ] Manual verification required |
+| 12 | Offline vendoring and three cross targets | Partial | Cross build not run | [ ] Manual verification required |
+
+## Tests and Commands
+
+```bash
+make build
+make test
+make lint
+make run
+```
+
+The documented validation gate is `make build && make test && make lint`. API, schema, board-manifest, and readiness documentation lives under `docs/`.
+
+## Limitations
+
+No physical board, browser role flow, TLS deployment, rollback timeout, RAUC update, or Yocto image was manually verified. Readiness statements remain dependent on the audit and acceptance documents.
+
+## Detailed Reference
+
+The retained WebConfig guide below contains the repository's extended product, layout, build, and deployment notes.
 # SoCcentric WebConfig
 
 An **on-device, browser-based configuration web UI** for the Zion
