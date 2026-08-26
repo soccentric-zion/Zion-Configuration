@@ -24,6 +24,8 @@
 # and cross targets declared in rust-toolchain.toml (spec §6 host/CI parity).
 # Idempotent — safe to re-run. Needs network access to static.rust-lang.org /
 # sh.rustup.rs; not usable in network-restricted sandboxes.
+.DEFAULT_GOAL := help
+
 toolchain: ## Install rustup + the exact pinned toolchain (one-time host setup)
 	@set -e; \
 	export PATH="$$HOME/.cargo/bin:$$PATH"; \
@@ -53,12 +55,7 @@ RUST_CHANNEL := $(shell grep -m1 '^channel' rust-toolchain.toml | sed -E 's/.*"(
 
 # Bare `make` prints help rather than building, so a stray invocation never
 # kicks off a network install or a build by surprise.
-.DEFAULT_GOAL := help
 
-help: ## Show this help
-	@echo "SoCcentric WebConfig — available targets:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
 build: ## Debug build of the daemon (host target)
 	$(CARGO) build --workspace
@@ -149,3 +146,20 @@ clean: ## Remove target/
 
 # Convenience alias: full validation gate (§9 step 6).
 check: build test lint ## Full validation gate: build && test && lint
+
+# ── Fleet-standard aliases ────────────────────────────────────────────────────
+# Same verbs mean the same thing in every repo; these forward to this
+# repo's own targets rather than duplicating their recipes.
+.PHONY: format
+format: fmt ## Alias for fmt
+
+# ── Help ──────────────────────────────────────────────────────────────────────
+# Targets are self-documenting: text after `## ` on a target line is picked up
+# by `make help` automatically, so the listing can never drift from the rules.
+.PHONY: help
+help: ## Show this help
+	@printf '\n  \033[1m%s\033[0m\n' 'Zion-Configuration'
+	@printf '  Usage: make <target> [VAR=value ...]\n'
+	@printf '\n'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_.\/-]+:.*?## / { printf "    \033[36m%-24s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@printf '\n'
