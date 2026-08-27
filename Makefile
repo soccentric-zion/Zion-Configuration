@@ -58,6 +58,10 @@ RUST_CHANNEL := $(shell grep -m1 '^channel' rust-toolchain.toml | sed -E 's/.*"(
 
 
 build: ## Debug build of the daemon (host target)
+	@if [ ! -d vendor ]; then \
+		echo "==> vendor/ missing, running 'make vendor' first"; \
+		$(MAKE) vendor; \
+	fi
 	$(CARGO) build --workspace
 
 release: ## Release build, exact spec §2 profile (opt-level=z, lto, stripped)
