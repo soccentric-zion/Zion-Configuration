@@ -79,10 +79,18 @@ RUN apt-get update \
 ENV CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
     CC_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc
 
-# The cross linker is declared in .cargo/config.toml, so carry it into the build.
-COPY .cargo ./ .cargo/
-
 WORKDIR /build
+
+# The cross linker is declared in .cargo/config.toml, so carry it into the build.
+# (Explicit /build/ destination so the copy is independent of the base image's
+# WORKDIR, and so cargo discovers /build/.cargo/config.toml first.)
+COPY .cargo /build/.cargo/
+
+# .cargo/config.toml replaces crates.io with a vendored sources directory
+# ([source.vendored-sources] directory = "vendor"). The vendored crates must be
+# present in the image or every dependency resolution dies with
+# "failed to read root of directory source: /vendor" (cargo exit 101).
+COPY vendor /build/vendor/
 
 # Copy manifest + lock + toolchain first to leverage the layer cache.
 COPY Cargo.toml Cargo.lock ./
