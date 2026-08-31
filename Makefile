@@ -7,13 +7,11 @@
 # Targets:
 #   make toolchain  — install rustup + the exact pinned toolchain (one-time
 #                     host setup; see rust-toolchain.toml)
-#   make build      — debug build of the daemon (host target)
-#   make release    — release build with the exact spec §2 profile
+#   make build      — build the production webconfigd Docker image (fleet default)
 #   make test       — engine + HTTP integration tests (fake sysroot, no HW)
 #   make lint       — clippy + rustfmt --check
 #   make fmt        — format in place
 #   make vendor     — (re)generate the vendored offline crate tarball
-#   make cross      — build all three cross-targets (CI parity)
 #   make run        — run the daemon against the real host (live /proc, real
 #                     backends); persistent state in ./data (dev)
 #   make run-mock   — run against a tempdir fake sysroot (mock backends, no HW)
@@ -51,21 +49,11 @@ TARGETS := x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu armv7-unknown-linu
 # drift from the pin.
 RUST_CHANNEL := $(shell grep -m1 '^channel' rust-toolchain.toml | sed -E 's/.*"([^"]*)".*/\1/')
 
-.PHONY: help build release test lint fmt vendor release-artifacts cross run run-mock stop clean check toolchain
+.PHONY: help build test lint fmt vendor release-artifacts run run-mock stop clean check toolchain
 
 # Bare `make` prints help rather than building, so a stray invocation never
 # kicks off a network install or a build by surprise.
 
-
-build: ## Debug build of the daemon (host target)
-	@if [ ! -d vendor ]; then \
-		echo "==> vendor/ missing, running 'make vendor' first"; \
-		$(MAKE) vendor; \
-	fi
-	$(CARGO) build --workspace
-
-release: ## Release build, exact spec §2 profile (opt-level=z, lto, stripped)
-	$(CARGO) build --workspace --release
 
 test: ## Engine + HTTP integration tests (fake sysroot, no hardware)
 	$(CARGO) test --workspace --all-targets
@@ -89,12 +77,6 @@ release-artifacts: ## Package release tarballs + compute real checksums for webc
 	@./tools/release-artifacts.sh
 
 # Cross-compile parity check for CI (spec §6).
-cross: ## Build all three cross-targets (x86_64/aarch64/armv7), CI parity
-	@for t in $(TARGETS); do \
-		echo "==> building $$t"; \
-		$(CARGO) build --workspace --release --target $$t || exit 1; \
-	done
-
 # Dev run against the REAL host sysroot (spec §6): no WEBCONFIG_SYSROOT is
 # set, so resolve_sysroot() uses "/" and is_real_root() is true — the daemon
 # reads live /proc + /sys and uses the real systemd/update backends (mock
@@ -148,8 +130,37 @@ stop: ## Stop the process listening on WEBCONFIG_PORT (default: 8443)
 clean: ## Remove target/
 	$(CARGO) clean
 
+# ── Docker (fleet-standard build) ────────────────────────────────────────────
+# The default build is the production container image (daemon + frontend +
+# schemas + board manifest) — see docker/Dockerfile. `make build` = Docker.
+
+.PHONY: docker-build docker-build-arm64 docker-build-armv7 docker-run docker-stop docker-logs docker-clean
+
+build: docker-build ## Build the production webconfigd image in Docker (fleet default)
+
+docker-build: ## Build the production webconfigd image (host arch)
+	$(MAKE) -C docker build IMAGE_NAME=zion-webconfigd
+
+docker-build-arm64: ## Cross-build the arm64 webconfigd image (Raspberry Pi 5 / Zynq MPSoC)
+	$(MAKE) -C docker build-arm64 IMAGE_NAME=zion-webconfigd
+
+docker-build-armv7: ## Cross-build the armv7 webconfigd image (32-bit Pi 2/3-class)
+	$(MAKE) -C docker build-armv7 IMAGE_NAME=zion-webconfigd
+
+docker-run: ## Run the container (production, port 8443)
+	$(MAKE) -C docker run IMAGE_NAME=zion-webconfigd
+
+docker-stop: ## Stop and remove the container
+	$(MAKE) -C docker stop
+
+docker-logs: ## Tail container logs
+	$(MAKE) -C docker logs
+
+docker-clean: ## Remove the built image
+	$(MAKE) -C docker clean IMAGE_NAME=zion-webconfigd
+
 # Convenience alias: full validation gate (§9 step 6).
-check: build test lint ## Full validation gate: build && test && lint
+check: build test lint ## Full validation gate: build (Docker) && test && lint
 
 # ── Fleet-standard aliases ────────────────────────────────────────────────────
 # Same verbs mean the same thing in every repo; these forward to this
