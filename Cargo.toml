@@ -23,13 +23,8 @@ members = [
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
-# Proprietary/closed (matches README.md and every meta-webconfig/*.bb recipe's
-# LICENSE = "CLOSED") — this repo is SoCcentric internal IV&V tooling, not
-# open source. `license-file` (not `license`, which expects an SPDX
-# expression) points at the real LICENSE file the Yocto recipes'
-# LIC_FILES_CHKSUM already reference.
-license-file = "LICENSE"
-repository = "https://github.com/soccentric/Zion-Configuration"
+license = "MIT"
+repository = "https://github.com/soccentric-zion/Zion-Configuration"
 authors = ["SoCcentric IV&V"]
 
 [workspace.dependencies]

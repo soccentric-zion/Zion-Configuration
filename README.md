@@ -124,4 +124,4 @@ See [`meta-webconfig/README.md`](meta-webconfig/README.md).
 
 ## License
 
-CLOSED (SoCcentric internal IV&V tooling).
+MIT. See [LICENSE](LICENSE).
