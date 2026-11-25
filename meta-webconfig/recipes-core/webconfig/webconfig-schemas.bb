@@ -10,7 +10,8 @@
 # endpoint exposes descriptors to the frontend renderer.
 
 SUMMARY = "SoCcentric WebConfig schema files"
-LICENSE = "CLOSED"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
 # Schemas shipped by default. Platform packs add more via bbappend.
 SRC_URI = "file://app-example.schema.json file://app-mcu-stm32.schema.json"
