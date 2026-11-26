@@ -1,8 +1,17 @@
-[source.crates-io]
-replace-with = "vendored-sources"
-
-[source.vendored-sources]
-directory = "vendor"
+# Build configuration.
+#
+# NOTE: the workspace builds against the online crates.io registry using the
+# committed Cargo.lock for reproducible versions. The previous `replace-with =
+# "vendored-sources"` block referenced a vendor/ directory that is not present
+# in this checkout, which made every build/CI fail. Keep this contract simple;
+# if a fully offline supply-chain mode is ever required, run `make vendor` to
+# generate the directory AND re-enable the block below.
+#
+# [source.crates-io]
+# replace-with = "vendored-sources"
+#
+# [source.vendored-sources]
+# directory = "vendor"
 
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
